@@ -365,7 +365,7 @@ class VoiceClient:
         return True
 
     def _handle_voice_packet(self, data, ssrc, timestamp, sequence):
-        self.dispatch('speak', data, self.client_ssrc.get(ssrc), timestamp, sequence)
+        self.dispatch('speak', data, self.client_ssrc.get(ssrc), timestamp, sequence, self.encoder)
 
     def _get_voice_packet(self, data):
         header = bytearray(12)
