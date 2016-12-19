@@ -175,10 +175,11 @@ class ProcessPlayer(StreamPlayer):
         if self.process.poll() is None:
             self.process.communicate()
 
-class VoiceClientProtocol:
+class VoiceClientProtocol(asyncio.Protocol):
     def __init__(self, secret_key, callback):
         self.callback = callback
         self.box = nacl.secret.SecretBox(bytes(secret_key))
+        super().__init__()
 
     def datagram_received(self, data, addr):
         """
