@@ -2042,7 +2042,6 @@ class Client:
         if position < 0:
             raise InvalidArgument('Channel position cannot be less than 0.')
 
-        url = '{0}/{1.server.id}/channels'.format(self.http.GUILDS, channel)
         channels = [c for c in channel.server.channels if c.type is channel.type]
 
         if position >= len(channels):
@@ -2061,7 +2060,7 @@ class Client:
             channels.insert(position, channel)
 
         payload = [{'id': c.id, 'position': index } for index, c in enumerate(channels)]
-        yield from self.http.patch(url, json=payload, bucket='move_channel')
+        yield from self.http.move_channel_position(channel.server.id, payload)
 
     @asyncio.coroutine
     def create_channel(self, server, name, *overwrites, type=None):
@@ -2243,6 +2242,9 @@ class Client:
 
         Creates a :class:`Server`.
 
+        Bot accounts generally are not allowed to create servers.
+        See Discord's official documentation for more info.
+
         Parameters
         ----------
         name : str
@@ -2271,9 +2273,9 @@ class Client:
             icon = utils._bytes_to_base64_data(icon)
 
         if region is None:
-            region = ServerRegion.us_west.name
+            region = ServerRegion.us_west.value
         else:
-            region = region.name
+            region = region.value
 
         data = yield from self.http.create_server(name, region, icon)
         return Server(**data)
@@ -2599,8 +2601,10 @@ class Client:
         temporary : bool
             Denotes that the invite grants temporary membership
             (i.e. they get kicked after they disconnect). Defaults to False.
-        xkcd : bool
-            Indicates if the invite URL is human readable. Defaults to False.
+        unique: bool
+            Indicates if a unique invite URL should be created. Defaults to True.
+            If this is set to False then it will return a previously created
+            invite.
 
         Raises
         -------
@@ -2781,8 +2785,6 @@ class Client:
         if role.position == position:
             return  # Save discord the extra request.
 
-        url = '{0}/{1.id}/roles'.format(self.http.GUILDS, server)
-
         change_range = range(min(role.position, position), max(role.position, position) + 1)
 
         roles = [r.id for r in sorted(filter(lambda x: (x.position in change_range) and x != role, server.roles), key=lambda x: x.position)]
@@ -2793,7 +2795,7 @@ class Client:
             roles.append(role.id)
 
         payload = [{"id": z[0], "position": z[1]} for z in zip(roles, change_range)]
-        yield from self.http.patch(url, json=payload, bucket='move_role')
+        yield from self.http.move_role_position(server.id, payload)
 
     @asyncio.coroutine
     def edit_role(self, server, role, **fields):
